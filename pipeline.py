@@ -1,5 +1,7 @@
 '''
 This script contains all steps performed in the SAHELI Piepline. 
+0. Load the deployment parameters from a remote Table. This includes parameters such as the budget K and
+registration time window of beneficiairies. (K is 1000 as per current constraints of the NGO)
 1. Loading and preprocessing Beneficiary Data,
 2. Loading a mapping model which predicts clusters given beneficiary features,
 3. Loading pre-computed whittle index mapping from clusters
@@ -45,8 +47,8 @@ CONFIG = {
     "clusters": 20,
     "transitions": "weekly",
     "clustering": "kmeans",
-    "pilot_start_date": datetime.today().strftime('%Y-%m-%d'),
-    "pilot_data": "data",
+    "start_date": datetime.today().strftime('%Y-%m-%d'),
+    "data": "data",
     "interventions": int(df_params['beneficiary_count'].to_list()[-1]),
     "read_sql": 1, 
     "from_registration_date": str(df_params['start_date'].to_list()[-1]),
@@ -54,32 +56,32 @@ CONFIG = {
 }
 
 print('Load Data')
-pilot_static_features, pilot_beneficiary_data, pilot_call_data , pilot_user_ids  = load_data(CONFIG)
+static_features, beneficiary_data, call_data , user_ids  = load_data(CONFIG)
 print('Load Mapping Model')
 cls, scaler = load_mapping_model(CONFIG)
 print('Load Whittle Indices')
 m_values = load_precomputed_whittle_indices(CONFIG)
 
 print("Obtaining cluster predictions")
-pilot_cluster_predictions = cls.predict(scaler.transform(pilot_static_features))
+cluster_predictions = cls.predict(scaler.transform(static_features))
 
 print("Obtaining intervention list")
 df_intervention, intervention_users = load_interventions_table(CONFIG)
 
 print("Obtaining States and Corresponding whittle indices")    
 whittle_indices = {'user_id': [], 'whittle_index': [], 'cluster': [], 'start_state': [], 'registration_date': [], 'current_E2C': []}
-for idx, puser_id in enumerate(pilot_user_ids):
+for idx, puser_id in enumerate(user_ids):
     print('index: '+str(idx))
-    pilot_date_num = (pd.to_datetime(CONFIG['pilot_start_date'], format="%Y-%m-%d") - pd.to_datetime("2018-01-01", format="%Y-%m-%d")).days
+    date_num = (pd.to_datetime(CONFIG['start_date'], format="%Y-%m-%d") - pd.to_datetime("2018-01-01", format="%Y-%m-%d")).days
     
     if puser_id in intervention_users:
         continue
     
     # Obtain Calls in last 7 days
-    past_days_calls = pilot_call_data[
-    (pilot_call_data["user_id"]==puser_id)&
-    (pilot_call_data["startdate"]<pilot_date_num)&
-    (pilot_call_data["startdate"]>=pilot_date_num - 7)
+    past_days_calls = call_data[
+    (call_data["user_id"]==puser_id)&
+    (call_data["startdate"]<date_num)&
+    (call_data["startdate"]>=date_num - 7)
 ]
     # Compute Connections and Engagement using Duration Threshold
     past_days_connections = past_days_calls[past_days_calls['duration']>0].shape[0]
@@ -91,7 +93,7 @@ for idx, puser_id in enumerate(pilot_user_ids):
         curr_state = 2
 
     # Obtain Predicted Cluster for the beneficiary
-    curr_cluster = pilot_cluster_predictions[idx]
+    curr_cluster = cluster_predictions[idx]
 
     # Obtain Corresponding Whittle Index for the cluster and its current state
     whittle_indices['user_id'].append(puser_id)
@@ -102,7 +104,7 @@ for idx, puser_id in enumerate(pilot_user_ids):
     elif curr_state == 2:
         whittle_indices['start_state'].append('E')
     
-    regis_date = pilot_beneficiary_data[pilot_beneficiary_data['user_id'] == puser_id]['registration_date'].item()
+    regis_date = beneficiary_data[beneficiary_data['user_id'] == puser_id]['registration_date'].item()
 
     whittle_indices['registration_date'].append(regis_date)
 
