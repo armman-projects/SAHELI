@@ -110,10 +110,12 @@ for idx, puser_id in enumerate(user_ids):
 
 print("finished computing whittle indices")
 df = pd.DataFrame(whittle_indices)
+# The following line ranks the beneficiaries in decreasing order of whittle indices
 df = df.sort_values('whittle_index', ascending=False)
 
 
 print('Pushing New Intervention List')
+# Choosing Top-K beneficiairies by Whittle Index. The value of K is fetched from CONFIG
 df_int = df[:CONFIG["interventions"]]
 
 push_interventions(df_int, CONFIG)
