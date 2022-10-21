@@ -7,4 +7,4 @@
 `whittle_utils.py` contains helper functions to compute whittle indices for solving the Restless Multi-Armed Bandit Problem.
 
 
-Contact: For any queries, please contact the authors at vermashresth@google.com, gargisingh@google.com
+Contact: For any queries, please contact the authors at vermashresth@google.com, gargisingh@google.com, lovishm@google.com, aditya_mate@g.harvard.edu
