@@ -32,7 +32,7 @@ for i in range(2):
     else:
         aug_states.append('H{}'.format(i // 2))
 
-
+# Load parameters of the deployment
 df_params = load_params_table()
 
 print('Define CONFIG Dictionary')
@@ -49,7 +49,7 @@ CONFIG = {
     "clustering": "kmeans",
     "start_date": datetime.today().strftime('%Y-%m-%d'),
     "data": "data",
-    "interventions": int(df_params['beneficiary_count'].to_list()[-1]),
+    "interventions": int(df_params['beneficiary_count'].to_list()[-1]), # the budget paremeter K
     "read_sql": 1, 
     "from_registration_date": str(df_params['start_date'].to_list()[-1]),
     "to_registration_date": str(df_params['end_date'].to_list()[-1]),
